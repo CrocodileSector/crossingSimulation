@@ -1,0 +1,15 @@
+﻿  CrossingSimulator.cpp
+c:\program files (x86)\microsoft visual studio\2017\community\vc\tools\msvc\14.16.27023\include\memory(1801): error C2280: 'Lane::Lane(const Lane &)': attempting to reference a deleted function
+  c:\users\vlad\source\repos\crossingsimulator\crossingsimulator\crossingsimulator.cpp(49): note: see declaration of 'Lane::Lane'
+  c:\users\vlad\source\repos\crossingsimulator\crossingsimulator\crossingsimulator.cpp(49): note: 'Lane::Lane(const Lane &)': function was explicitly deleted
+  c:\program files (x86)\microsoft visual studio\2017\community\vc\tools\msvc\14.16.27023\include\memory(1865): note: see reference to function template instantiation 'std::_Ref_count_obj<_Ty>::_Ref_count_obj<Lane&>(Lane &)' being compiled
+          with
+          [
+              _Ty=Lane
+          ]
+  c:\program files (x86)\microsoft visual studio\2017\community\vc\tools\msvc\14.16.27023\include\memory(1866): note: see reference to function template instantiation 'std::_Ref_count_obj<_Ty>::_Ref_count_obj<Lane&>(Lane &)' being compiled
+          with
+          [
+              _Ty=Lane
+          ]
+  c:\users\vlad\source\repos\crossingsimulator\crossingsimulator\crossingsimulator.cpp(149): note: see reference to function template instantiation 'std::shared_ptr<Lane> std::make_shared<Lane,Lane&>(Lane &)' being compiled
