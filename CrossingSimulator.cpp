@@ -8,7 +8,10 @@
 #include <cstdio>
 #include <ctime>
 
-struct Vehicle
+static long long c = 0;
+static int offset = 0;
+
+/*struct Vehicle
 {
 	static int id;
 
@@ -21,7 +24,7 @@ struct Vehicle
 	}
 };
 
-int Vehicle::id = 0;
+int Vehicle::id = 0;*/
 
 class Lane
 {
@@ -29,16 +32,10 @@ class Lane
 	std::shared_ptr<std::thread> m_runner;
 	std::condition_variable m_cv;
 	std::mutex m_mutex;
-	std::atomic_bool m_runSignal;
+	std::atomic_bool m_run;
 
 	short m_nTimeout;
 	int m_accumulator;
-	
-	class Lane(const class Lane &a, const std::unique_lock<std::mutex> &)
-		: m_accumulator(a.m_accumulator), m_name(std::string(a.m_name.begin(), a.m_name.end())), m_nTimeout(a.m_nTimeout)
-	{
-
-	}
 
 public:
 
@@ -66,33 +63,38 @@ public:
 
 	void Start()
 	{
-		m_runSignal = true;
+		m_run = true;
 
-		if (m_runner)
-			m_runner.reset(&std::thread(&Lane::Run, this));
+		if(!m_runner)
+			m_runner = std::make_shared<std::thread>(&Lane::Run, this);
 	}
 
 	void Run()
 	{
-		if (m_runSignal)
+		if (m_run)
 		{
 			std::unique_lock<std::mutex> lock(m_mutex);
 
 			std::clock_t start;
-			double duration;
+			long double duration = 0;
 
 			start = std::clock();
 
-			while (duration != m_nTimeout)
+			while (duration < m_nTimeout)
 			{
-				Vehicle v[2];
+				//Vehicle v[2];
 
 				duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
+
+				if (static_cast<int>(duration) % 500 == 0)
+					c += 2;
 			}
 
-			m_accumulator += Vehicle::id - m_accumulator;
+			
+			m_accumulator = c - offset - m_accumulator;
+			offset = c - m_accumulator;
 
-			std::cout << "On lane " << m_name << " passed " << m_accumulator << " vehicles..." << std::endl;
+			std::cout << "On " << m_name << " passed " << m_accumulator << " vehicles..." << std::endl;
 		}
 
 		OnComplete();
@@ -102,34 +104,36 @@ public:
 	{
 		std::unique_lock<std::mutex> lock(m_mutex);
 
-		m_runSignal = false;
-		m_cv.wait(lock, std::bind(&Lane::IsDone, this));
+		m_run = false;
+		m_cv.wait(lock, std::bind(&Lane::IsRunning, this));
 	}
 
 	void OnComplete()
 	{
-		std::unique_lock<std::mutex> lock(m_mutex);
-
-		std::cout << "Locking lane " << m_name << std::endl;
+		std::cout << "Locking " << m_name << std::endl;
 
 		OnWait();
 	}
 
-	bool IsDone()
+	bool IsRunning()
 	{
-		std::unique_lock<std::mutex> lock(m_mutex);
-
-		return !m_runSignal;
+		return m_run;
 	}
 
 	void Notify()
 	{
 		std::unique_lock<std::mutex> lock(m_mutex);
 
-		m_runSignal = true;
+		m_run = true;
 		m_cv.notify_one();
 
-		Run();
+		//Run();
+	}
+
+	~Lane()
+	{
+		if (m_runner->joinable())
+			m_runner->join();
 	}
 };
 
@@ -140,31 +144,51 @@ public:
 	void Start()
 	{
 		const short noOfLanes = 2;
-		Lane lanes[noOfLanes]{ { "Vertical lane" }, { "Horizontal lane" } };
 
-		bool running = true;
-		while (running)
+		std::vector<std::shared_ptr<Lane>> lanes;
+
+		lanes.push_back(std::make_shared<Lane>("Vertical lane"));
+		lanes.push_back(std::make_shared<Lane>("Horizontal lane"));
+
+		std::thread laneController
+		([&lanes, &noOfLanes]
 		{
-			size_t it = 0;
-			std::shared_ptr<Lane> lp = std::make_shared<Lane>(lanes[it]);
-
-			lp->Start();
-
-			while (!lp->IsDone())
-				; 
-
-			if (lp->IsDone())
+			bool running = true;
+			while (running)
 			{
-				if (it == noOfLanes)
-					it = 0;
-				else
-					it++;
+				try
+				{
+					size_t pos = 0;
+					std::shared_ptr<Lane> it = lanes[pos];
 
-				lp = std::make_shared<Lane>(lanes[it]);
-				lp->Notify();
+					it->Start();
+
+					while (it->IsRunning())
+						;
+
+					if (!it->IsRunning())
+					{
+						if (pos == noOfLanes)
+							pos = 0;
+						else
+							pos++;
+
+						it = lanes[pos];
+						it->Notify();
+					}
+				}
+				catch (std::exception &e)
+				{
+					throw std::runtime_error(e.what());
+				}
 			}
-			
-		}
+		
+		});
+
+		std::this_thread::sleep_for(std::chrono::minutes(10));
+
+		laneController.join();
+		
 	}
 };
 
