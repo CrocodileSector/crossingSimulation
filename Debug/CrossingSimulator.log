@@ -1,4 +1,2 @@
 ﻿  CrossingSimulator.cpp
-c:\users\vlad\source\repos\crossingsimulator\crossingsimulator\crossingsimulator.cpp(94): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
-c:\users\vlad\source\repos\crossingsimulator\crossingsimulator\crossingsimulator.cpp(95): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
   CrossingSimulator.vcxproj -> C:\Users\Vlad\source\repos\CrossingSimulator\Debug\CrossingSimulator.exe
